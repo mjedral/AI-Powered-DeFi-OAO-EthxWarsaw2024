@@ -6,7 +6,7 @@ import {IAIOracle} from "../OAO/contracts/interfaces/IAIOracle.sol";
 import {AIOracleCallbackReceiver} from "../OAO/contracts/AIOracleCallbackReceiver.sol";
 
 // this contract is for ai.ora.io website
-contract Prompt is AIOracleCallbackReceiver {
+contract LendingPrompt is AIOracleCallbackReceiver {
     event promptsUpdated(
         uint256 requestId,
         uint256 modelId,

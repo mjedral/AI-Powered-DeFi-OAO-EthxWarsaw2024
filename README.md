@@ -1,66 +1,46 @@
-## Foundry
+# AI Lending Aggregator
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+### Deployed Contracts (Ethereum Sepolia)
 
-Foundry consists of:
+**LendingPrompt.sol**: 0xc1A146358A8c011aC8419Aea7ba6d05966CC1774
+**AILendingAggregator.sol**: 0xA87295524311A8135c38f93b37D4550eB2779196
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+### Project Overview
+This project implements an AI-driven lending platform aggregator that uses data from the Aave and Compound protocols. 
+By leveraging an AI Oracle, the platform dynamically selects the optimal lending platform based on market data provided by both protocols.
 
-## Documentation
+### Key Contracts
 
-https://book.getfoundry.sh/
+**LendingPrompt.sol**
+This contract is responsible for interacting with an AI Oracle. 
+It generates a prompt containing data from the Aave and Compound lending protocols and sends it to the AI Oracle. 
+The oracle returns a recommendation on which platform (Aave or Compound) is the most optimal for lending.
 
-## Usage
+**AILendingAggregator.sol**
+This contract aggregates the data from Aave and Compound, generates the prompt, and interacts with the LendingPrompt contract to get AI recommendations.
+It holds instances of the Aave and Compound contracts (aaveDataProvider and comet) to fetch live data from these platforms.
 
-### Build
+### Running Tests
 
-```shell
-$ forge build
-```
+Install dependencies:
+forge install
 
-### Test
+Compile the contracts:
+forge build
 
-```shell
-$ forge test
-```
+Run tests:
+forge test
 
-### Format
+### Deployment
+To deploy the contracts on a network like Sepolia, follow these steps:
 
-```shell
-$ forge fmt
-```
+Set up environment variables for deployment(DONT USE PASTE YOUR PRODUCTION KEY HERE! USE INTERACTIVE CONSOLE INSTEAD!):
+`export PRIVATE_KEY=your_private_key`
+`export RPC_URL=YOUR_RPC_URL`
 
-### Gas Snapshots
+Deploy the contracts:
+`forge script script/PromptScript.s.sol --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast`
 
-```shell
-$ forge snapshot
-```
+Verify the contract on Etherscan:
+`forge verify-contract --chain-id 11155111 --compiler-version <solidity_version> --watch --etherscan-api-key <YOUR_ETHERSCAN_KEY>`
 
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```

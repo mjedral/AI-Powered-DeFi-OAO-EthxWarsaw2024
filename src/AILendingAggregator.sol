@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import "./Prompt.sol";
+import "./LendingPrompt.sol";
 import "./interfaces/IPoolDataProvider.sol";
 import "./interfaces/IComet.sol";
 
@@ -15,10 +15,12 @@ contract AILendingAggregator {
     LendingPlatform public selectedPlatform;
     string public AIResult;
     address public owner;
-    Prompt public promptContract;
+    LendingPrompt public promptContract;
     IPoolDataProvider public aaveDataProvider;
     IComet public comet;
     address constant WETH_SEPOLIA = 0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9;
+
+    event AIResultUpdated(string AIResult);
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner can call this function");
@@ -31,20 +33,12 @@ contract AILendingAggregator {
         address _comet
     ) {
         owner = msg.sender;
-        promptContract = Prompt(_promptContractAddress);
+        promptContract = LendingPrompt(_promptContractAddress);
         aaveDataProvider = IPoolDataProvider(_aaveDataProvider); // poolDataProvider on sepolia = 0x3e9708d80f7B3e43118013075F7e95CE3AB31F31
         comet = IComet(_comet); // cWETHv3 = 0x2943ac1216979aD8dB76D9147F64E61adc126e96
     }
 
-    // function to get AI result from the Prompt contract
-    function fetchAIResult(
-        uint256 modelId,
-        string calldata prompt
-    ) external onlyOwner {
-        AIResult = promptContract.getAIResult(modelId, prompt);
-    }
-
-    function generatePrompt() private returns (string memory) {
+    function generatePrompt() private view returns (string memory) {
         (
             ,
             ,
@@ -102,11 +96,16 @@ contract AILendingAggregator {
             );
     }
 
-    // use calculateAIResult to generate prompt like:
     // promptContract.calculateAIResult(modelId, prompt) where modelId is llama3 for us(id number 11) and prompt is text message
+    // TOREFACTOR
+    function calculateAIResult(uint8 modelId) external onlyOwner {
+        uint256 fee = promptContract.estimateFee(modelId);
+        string memory generatedPrompt = generatePrompt();
+        promptContract.calculateAIResult{value: fee}(modelId, generatedPrompt);
+    }
 
     // function set selectedPlatform up depends on prompt result
-    function setLendingPlatform() public {
+    function setLendingPlatform() private {
         if (
             keccak256(abi.encodePacked(AIResult)) ==
             keccak256(abi.encodePacked("AAVE"))
@@ -120,6 +119,16 @@ contract AILendingAggregator {
         } else {
             selectedPlatform = LendingPlatform.UNKNOWN;
         }
+    }
+
+    function checkResultAndSetPlatform(
+        uint256 modelId,
+        string calldata prompt
+    ) external onlyOwner {
+        string memory aiResult = promptContract.getAIResult(modelId, prompt);
+        require(bytes(aiResult).length > 0, "Result is not ready yet");
+        AIResult = aiResult;
+        setLendingPlatform();
     }
 
     /*
