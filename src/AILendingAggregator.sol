@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import "./LendingPrompt.sol";
 import "./interfaces/IPoolDataProvider.sol";
 import "./interfaces/IComet.sol";
+import "../lib/openzeppelin-contracts/contracts/utils/Strings.sol";
 
 contract AILendingAggregator {
     enum LendingPlatform {
@@ -18,7 +19,7 @@ contract AILendingAggregator {
     LendingPrompt public promptContract;
     IPoolDataProvider public aaveDataProvider;
     IComet public comet;
-    address constant WETH_SEPOLIA = 0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9;
+    address constant USDT_SEPOLIA = 0xaA8E23Fb1079EA71e0a56F48a2aA51851D8433D0;
 
     event AIResultUpdated(string AIResult);
 
@@ -38,7 +39,7 @@ contract AILendingAggregator {
         comet = IComet(_comet); // cWETHv3 = 0x2943ac1216979aD8dB76D9147F64E61adc126e96
     }
 
-    function generatePrompt() private view returns (string memory) {
+    function generatePrompt() public view returns (string memory) {
         (
             ,
             ,
@@ -52,7 +53,7 @@ contract AILendingAggregator {
             ,
             ,
 
-        ) = aaveDataProvider.getReserveData(WETH_SEPOLIA); // add asset address
+        ) = aaveDataProvider.getReserveData(USDT_SEPOLIA); // add asset address
 
         uint256 totalSupply = comet.totalSupply();
         uint256 totalBorrow = comet.totalBorrow();
@@ -66,31 +67,31 @@ contract AILendingAggregator {
                     "I want to forecast the supply rate changes in the Aave and Compound protocol based on the following data. Please provide a prediction for the next 3 days. In both case we compare indicators for WETH token",
                     "AAVE:",
                     " Total Liquidity: ",
-                    totalAToken,
+                    Strings.toString(totalAToken),
                     ", Total Stable Debt: ",
-                    totalStableDebt,
+                    Strings.toString(totalStableDebt),
                     ", Total Variable Debt: ",
-                    totalVariableDebt,
+                    Strings.toString(totalVariableDebt),
                     ", Liquidity Rate: ",
-                    liquidityRate,
+                    Strings.toString(liquidityRate),
                     ", Variable Borrow Rate: ",
-                    variableBorrowRate,
+                    Strings.toString(variableBorrowRate),
                     ", Stable Borrow Rate: ",
-                    stableBorrowRate,
+                    Strings.toString(stableBorrowRate),
                     ", Average Stable Borrow Rate: ",
-                    averageStableBorrowRate,
+                    Strings.toString(averageStableBorrowRate),
                     "_____________",
                     ". COMPOUND: ",
                     "Total Supply: ",
-                    totalSupply,
+                    Strings.toString(totalSupply),
                     ", Total Borrow: ",
-                    totalBorrow,
+                    Strings.toString(totalBorrow),
                     ", Utilization: ",
-                    utilization,
+                    Strings.toString(utilization),
                     ", Supply Rate: ",
-                    supplyRate,
+                    Strings.toString(supplyRate),
                     ", Borrow Rate: ",
-                    borrowRate,
+                    Strings.toString(borrowRate),
                     "Based on these data, please provide an estimate of the future supply rate over the next 3 days and generate prompt only with result which option is better. Please answer only with name of protocol. I mean AAVE or COMPOUND"
                 )
             );
@@ -98,7 +99,7 @@ contract AILendingAggregator {
 
     // promptContract.calculateAIResult(modelId, prompt) where modelId is llama3 for us(id number 11) and prompt is text message
     // TOREFACTOR
-    function calculateAIResult(uint8 modelId) external onlyOwner {
+    function calculateAIResult(uint8 modelId) external payable onlyOwner {
         uint256 fee = promptContract.estimateFee(modelId);
         string memory generatedPrompt = generatePrompt();
         promptContract.calculateAIResult{value: fee}(modelId, generatedPrompt);
