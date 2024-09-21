@@ -5,5 +5,10 @@ libs = ["lib"]
 rpc_url = "${SEPOLIA_RPC_URL}"
 private_key = "${PRIVATE_KEY}"
 etherscan_key = "${ETHERSCAN_API_KEY"
+via-ir = true
+
+remappings = [
+    '@openzeppelin/contracts/=lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/',
+]
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
