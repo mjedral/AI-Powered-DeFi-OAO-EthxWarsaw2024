@@ -13,6 +13,8 @@ import "../src/interfaces/IComet.sol";
     1. move fetching lending data from smart contract to script - it's cheaper to do it off-chain
     2. from AILendingAggregator remove logic responsible for prompting/calculating prompt 
     3. add logic for supply providing
+
+    we need to optimize gas costs!
     
 */
 
@@ -27,12 +29,41 @@ contract InteractWithAggregator is Script {
     IPoolDataProvider aaveDataProvider;
     IComet comet;
 
+    function formatPercentage(
+        uint256 value,
+        uint256 scale
+    ) internal pure returns (string memory) {
+        uint256 percentage = (value * 100) / scale;
+        return string(abi.encodePacked(Strings.toString(percentage), "%"));
+    }
+
+    function formatLargeNumber(
+        uint256 value
+    ) internal pure returns (string memory) {
+        string memory numberStr = Strings.toString(value);
+        bytes memory numberBytes = bytes(numberStr);
+        string memory formattedNumber = "";
+        uint256 length = numberBytes.length;
+
+        for (uint256 i = 0; i < length; i++) {
+            if (i > 0 && (length - i) % 3 == 0) {
+                formattedNumber = string(
+                    abi.encodePacked(formattedNumber, ",")
+                );
+            }
+            formattedNumber = string(
+                abi.encodePacked(formattedNumber, numberBytes[i])
+            );
+        }
+        return formattedNumber;
+    }
+
     function setUp() public {
         aaveDataProvider = IPoolDataProvider(AAVE_DATA_PROVIDER);
         comet = IComet(COMET_DATA_PROVIDER);
     }
 
-    function run() external {
+    function getPrompt() public view returns (string memory) {
         (
             ,
             ,
@@ -54,44 +85,45 @@ contract InteractWithAggregator is Script {
         uint256 supplyRate = comet.getSupplyRate(utilization);
         uint256 borrowRate = comet.getBorrowRate(utilization);
 
-        string memory prompt = string(
-            abi.encodePacked(
-                "I want to forecast the supply rate changes in the Aave and Compound protocol based on the following data. Please provide a prediction for the next 3 days. In both case we compare indicators for WETH token",
-                "AAVE:",
-                " Total Liquidity: ",
-                Strings.toString(totalAToken),
-                ", Total Stable Debt: ",
-                Strings.toString(totalStableDebt),
-                ", Total Variable Debt: ",
-                Strings.toString(totalVariableDebt),
-                ", Liquidity Rate: ",
-                Strings.toString(liquidityRate),
-                ", Variable Borrow Rate: ",
-                Strings.toString(variableBorrowRate),
-                ", Stable Borrow Rate: ",
-                Strings.toString(stableBorrowRate),
-                ", Average Stable Borrow Rate: ",
-                Strings.toString(averageStableBorrowRate),
-                "_____________",
-                ". COMPOUND: ",
-                "Total Supply: ",
-                Strings.toString(totalSupply),
-                ", Total Borrow: ",
-                Strings.toString(totalBorrow),
-                ", Utilization: ",
-                Strings.toString(utilization),
-                ", Supply Rate: ",
-                Strings.toString(supplyRate),
-                ", Borrow Rate: ",
-                Strings.toString(borrowRate),
-                "Based on these data, please provide an estimate of the future supply rate over the next 3 days and generate prompt only with result which option is better. Please answer only with name of protocol. I mean AAVE or COMPOUND"
-            )
-        );
+        return
+            string(
+                abi.encodePacked(
+                    "I want to forecast the supply rate changes in the Aave and Compound protocol based on the following data. Please provide a prediction for the next 3 days. In both case we compare indicators for WETH token",
+                    "AAVE:",
+                    " Total Liquidity: ",
+                    "AAVE:",
+                    " Total Liquidity: ",
+                    formatLargeNumber(totalAToken),
+                    ", Total Stable Debt: ",
+                    formatLargeNumber(totalStableDebt),
+                    ", Total Variable Debt: ",
+                    formatLargeNumber(totalVariableDebt),
+                    ", Liquidity Rate: ",
+                    formatPercentage(liquidityRate, 10 ** 27),
+                    ", Variable Borrow Rate: ",
+                    formatPercentage(variableBorrowRate, 10 ** 27),
+                    ", Stable Borrow Rate: ",
+                    formatPercentage(stableBorrowRate, 10 ** 27),
+                    ", Average Stable Borrow Rate: ",
+                    formatPercentage(averageStableBorrowRate, 10 ** 27),
+                    "_____________",
+                    "COMPOUND: ",
+                    "Total Supply: ",
+                    formatLargeNumber(totalSupply),
+                    ", Total Borrow: ",
+                    formatLargeNumber(totalBorrow),
+                    ", Utilization: ",
+                    formatPercentage(utilization, 10 ** 18),
+                    ", Supply Rate: ",
+                    formatPercentage(supplyRate, 10 ** 18),
+                    ", Borrow Rate: ",
+                    formatPercentage(borrowRate, 10 ** 18),
+                    "Based on these data, please provide an estimate of the future supply rate over the next 3 days and generate prompt only with result which option is better. Please answer only with name of protocol. I mean AAVE or COMPOUND"
+                )
+            );
+    }
 
-        uint privateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(privateKey);
-
-        AILendingAggregator aggregator = AILendingAggregator(aggregatorAddress);
+    function firstPart(string memory prompt) public {
         LendingPrompt lendingPrompt = LendingPrompt(lendingPromptAddress);
 
         uint fee = lendingPrompt.estimateFee(11);
@@ -100,14 +132,43 @@ contract InteractWithAggregator is Script {
 
         lendingPrompt.setCallbackGasLimit(11, 5000000);
 
-        lendingPrompt.calculateAIResult{value: 100000000000000000}(11, prompt);
+        lendingPrompt.calculateAIResult{value: fee}(11, prompt);
+    }
 
-        vm.warp(block.timestamp + 2 minutes);
+    function secondPart(string memory prompt) public {
+        AILendingAggregator aggregator = AILendingAggregator(aggregatorAddress);
 
         aggregator.checkResultAndSetPlatform(11, prompt);
 
         console.log("Selected platform");
         aggregator.selectedPlatform;
+    }
+
+    function run() external {
+        uint privateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(privateKey);
+
+        string memory prompt = getPrompt();
+
+        // LendingPrompt lendingPrompt = LendingPrompt(lendingPromptAddress);
+
+        // (
+        //     address sender,
+        //     uint256 modelId,
+        //     bytes memory input,
+        //     bytes memory output
+        // ) = lendingPrompt.requests(17263);
+
+        // string memory result = lendingPrompt.getAIResult(11, prompt);
+
+        // console.log("AI Result", string(output));
+        // console.log("AI RESULT 2", result);
+
+        firstPart(prompt);
+
+        // vm.sleep(960000);
+
+        secondPart(prompt);
 
         vm.stopBroadcast();
     }
