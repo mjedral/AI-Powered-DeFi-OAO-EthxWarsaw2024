@@ -2,6 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {Script, console} from "forge-std/Script.sol";
+import {IERC20} from "../lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import "../src/AILendingAggregator.sol";
 import "../src/LendingPrompt.sol";
 import "../src/interfaces/IPoolDataProvider.sol";
@@ -77,7 +78,20 @@ contract InteractWithAggregator is Script {
             ,
             ,
 
-        ) = aaveDataProvider.getReserveData(USDT_SEPOLIA); // add asset address
+        ) = aaveDataProvider.getReserveData(
+                0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8 // USDC
+            ); // add asset address
+
+        uint256 aTokenTotalSupply = aaveDataProvider.getATokenTotalSupply(
+            0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8
+        );
+
+        uint256 totalDebt = totalStableDebt + totalVariableDebt;
+        uint256 totalDeposits = IERC20(
+            0x94a9D9AC8a22534E3FaCa9F4e7F2E2cf85d5E4C8
+        ).balanceOf(address(aaveDataProvider)) + totalDebt;
+
+        uint256 aaveUtilization = (totalDebt * 1e18) / totalDeposits;
 
         uint256 totalSupply = comet.totalSupply();
         uint256 totalBorrow = comet.totalBorrow();
@@ -85,15 +99,21 @@ contract InteractWithAggregator is Script {
         uint256 supplyRate = comet.getSupplyRate(utilization);
         uint256 borrowRate = comet.getBorrowRate(utilization);
 
+        // TODO: add indicators for AAVE and Compound like utilization or supply rate, because now is unequally
+
         return
             string(
                 abi.encodePacked(
-                    "I want to forecast the supply rate changes in the Aave and Compound protocol based on the following data. Please provide a prediction for the next 3 days. In both case we compare indicators for WETH token",
+                    "I want to forecast the supply rate changes in the Aave and Compound protocol based on the following data. Please provide a prediction for the next 3 days. In both case we compare indicators for USDT token",
                     "AAVE:",
                     " Total Liquidity: ",
                     "AAVE:",
                     " Total Liquidity: ",
                     formatLargeNumber(totalAToken),
+                    " Total Supply: ",
+                    formatLargeNumber(aTokenTotalSupply),
+                    "Utilization Rate: ",
+                    Strings.toString(aaveUtilization),
                     ", Total Stable Debt: ",
                     formatLargeNumber(totalStableDebt),
                     ", Total Variable Debt: ",
