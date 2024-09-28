@@ -11,6 +11,8 @@ import "../src/interfaces/IComet.sol";
 /*
 
     TODO: 
+    - move to optimism sepolia
+    - finish prompt
     1. move fetching lending data from smart contract to script - it's cheaper to do it off-chain
     2. from AILendingAggregator remove logic responsible for prompting/calculating prompt 
     3. add logic for supply providing
@@ -59,6 +61,58 @@ contract InteractWithAggregator is Script {
         return formattedNumber;
     }
 
+    function padLeft(
+        string memory str,
+        uint256 length,
+        string memory padChar
+    ) internal pure returns (string memory) {
+        bytes memory strBytes = bytes(str);
+        if (strBytes.length >= length) return str;
+
+        bytes memory padBytes = bytes(padChar);
+        bytes memory result = new bytes(length);
+
+        for (uint256 i = 0; i < length - strBytes.length; i++) {
+            result[i] = padBytes[0];
+        }
+        for (uint256 i = 0; i < strBytes.length; i++) {
+            result[length - strBytes.length + i] = strBytes[i];
+        }
+
+        return string(result);
+    }
+
+    function calculateAPY(
+        uint256 ratePerSecond
+    ) internal pure returns (uint256) {
+        uint256 ratePerYear = ratePerSecond * 365 days;
+        return ((1 + ratePerYear / 1e27) ** (1e27 / 1e18) - 1e27) * 1e10;
+    }
+
+    function getSupplyAPY(uint256 supplyRate) public view returns (uint256) {
+        return calculateAPY(supplyRate);
+    }
+
+    function getFormattedSupplyAPY(
+        uint256 apy
+    ) public view returns (string memory) {
+        return formatAPY(apy);
+    }
+
+    function formatAPY(uint256 apy) internal pure returns (string memory) {
+        uint256 integerPart = apy / 1e18;
+        uint256 fractionalPart = (apy % 1e18) / 1e14; // 4 decimal places
+        return
+            string(
+                abi.encodePacked(
+                    Strings.toString(integerPart),
+                    ".",
+                    padLeft(Strings.toString(fractionalPart), 4, "0"),
+                    "%"
+                )
+            );
+    }
+
     function setUp() public {
         aaveDataProvider = IPoolDataProvider(AAVE_DATA_PROVIDER);
         comet = IComet(COMET_DATA_PROVIDER);
@@ -93,6 +147,12 @@ contract InteractWithAggregator is Script {
 
         uint256 aaveUtilization = (totalDebt * 1e18) / totalDeposits;
 
+        string memory formattedSupplyAPY = getFormattedSupplyAPY(
+            getSupplyAPY(liquidityRate)
+        );
+
+        // check if compound functions gives correct outputs
+
         uint256 totalSupply = comet.totalSupply();
         uint256 totalBorrow = comet.totalBorrow();
         uint256 utilization = comet.getUtilization();
@@ -112,8 +172,10 @@ contract InteractWithAggregator is Script {
                     formatLargeNumber(totalAToken),
                     " Total Supply: ",
                     formatLargeNumber(aTokenTotalSupply),
+                    " Supply APY ",
+                    formattedSupplyAPY,
                     "Utilization Rate: ",
-                    Strings.toString(aaveUtilization),
+                    Strings.toString(aaveUtilization), // add proper formatting
                     ", Total Stable Debt: ",
                     formatLargeNumber(totalStableDebt),
                     ", Total Variable Debt: ",
@@ -155,14 +217,14 @@ contract InteractWithAggregator is Script {
         lendingPrompt.calculateAIResult{value: fee}(11, prompt);
     }
 
-    function secondPart(string memory prompt) public {
-        AILendingAggregator aggregator = AILendingAggregator(aggregatorAddress);
+    // function secondPart(string memory prompt) public {
+    //     AILendingAggregator aggregator = AILendingAggregator(aggregatorAddress);
 
-        aggregator.checkResultAndSetPlatform(11, prompt);
+    //     aggregator.checkResultAndSetPlatform(11, prompt);
 
-        console.log("Selected platform");
-        aggregator.selectedPlatform;
-    }
+    //     console.log("Selected platform");
+    //     aggregator.selectedPlatform;
+    // }
 
     function run() external {
         uint privateKey = vm.envUint("PRIVATE_KEY");
@@ -188,7 +250,7 @@ contract InteractWithAggregator is Script {
 
         // vm.sleep(960000);
 
-        secondPart(prompt);
+        // secondPart(prompt);
 
         vm.stopBroadcast();
     }
