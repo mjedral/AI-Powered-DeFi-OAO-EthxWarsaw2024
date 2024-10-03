@@ -4,7 +4,7 @@
 
 **LendingPrompt.sol**: 0xc1A146358A8c011aC8419Aea7ba6d05966CC1774
 
-**AILendingAggregator.sol**: 0xA87295524311A8135c38f93b37D4550eB2779196
+**AILendingAggregator.sol**: 0x3d49D97A7575a554C8206a04DC497365dDf2f294
 
 --------------
 

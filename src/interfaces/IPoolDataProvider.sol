@@ -37,4 +37,8 @@ interface IPoolDataProvider {
             uint256 variableBorrowIndex,
             uint40 lastUpdateTimestamp
         );
+
+    function getATokenTotalSupply(
+        address asset
+    ) external view returns (uint256);
 }
