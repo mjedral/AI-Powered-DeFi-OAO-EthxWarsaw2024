@@ -20,6 +20,8 @@ import {Formatter} from "../src/utils/Formatter.sol";
     4. change logic for checking selected platform - getAIResult() doesn't work properly
 
     we need to optimize gas costs!
+
+    POMYŚLEĆ NAD ZROBIENIEM LENDINGU POD MEMECOINY ALBO INNE RYZYKOWNE ASSETY Z UŻYCIEM ORA PROTOCOL!
     
 */
 

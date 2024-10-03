@@ -2,6 +2,20 @@
 pragma solidity ^0.8.0;
 
 interface IComet {
+    function supplyFrom(
+        address from,
+        address dst,
+        address asset,
+        uint amount
+    ) external virtual;
+
+    function withdrawFrom(
+        address src,
+        address to,
+        address asset,
+        uint amount
+    ) external virtual;
+
     function totalSupply() external view returns (uint256);
 
     function totalBorrow() external view returns (uint256);
