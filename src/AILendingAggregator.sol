@@ -69,14 +69,14 @@ contract AILendingAggregator {
         emit LiquiditySupplied("COMPOUND", asset, amount);
     }
 
-    // function checkResultAndSetPlatform(
-    //     uint256 modelId,
-    //     string calldata prompt
-    // ) external onlyOwner {
-    //     string memory aiResult = promptContract.getAIResult(modelId, prompt);
-    //     require(bytes(aiResult).length > 0, "Result is not ready yet");
-    //     AIResult = aiResult;
-    // }
+    function checkResultAndSetPlatform(
+        uint256 modelId,
+        string calldata prompt
+    ) external onlyOwner {
+        string memory aiResult = promptContract.getAIResult(modelId, prompt);
+        require(bytes(aiResult).length > 0, "Result is not ready yet");
+        AIResult = aiResult;
+    }
 
     /*
     

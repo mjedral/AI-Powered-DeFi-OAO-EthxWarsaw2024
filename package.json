@@ -1,0 +1,20 @@
+{
+  "name": "ai-powered-defi-oao-ethxwarsaw2024",
+  "version": "1.0.0",
+  "description": "## Deployed Contracts (Ethereum Sepolia)",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "ethers": "^6.13.3"
+  }
+}
