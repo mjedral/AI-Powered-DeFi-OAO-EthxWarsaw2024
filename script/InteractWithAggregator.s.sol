@@ -74,19 +74,11 @@ contract InteractWithAggregator is Script {
         uint256 aaveUtilization = (totalDebt * 1e18) /
             (availableLiquidity + totalDebt);
 
-        // ----- Compound
-
-        // uint256 totalSupply = comet.totalSupply();
-        // uint256 totalBorrow = comet.totalBorrow();
-        // uint256 utilization = comet.getUtilization();
-        // uint256 supplyRate = comet.getSupplyRate(utilization);
-        // uint256 borrowRate = comet.getBorrowRate(utilization);
-
         return
             string(
                 abi.encodePacked(
-                    "IMPORTANT: Please answer only with one word - name of protocol AAVE or COMPOUND using capital letters. I want to forecast the supply rate changes in the Aave and Compound protocol based on the following data. Please provide a prediction for the next 3 days. In both case we compare indicators for USDC token",
-                    "AAVE:",
+                    "IMPORTANT: Please answer only with one word - name of asset USDC, USDT or WETH using capital letters. I want to forecast the supply rate changes in the Aave protocol for these 3 assets based on the following data. Please provide a prediction for the next 7 days.",
+                    "USDC:",
                     " Total Liquidity / Total Supply: ",
                     Formatter.formatLargeNumber(totalAToken),
                     "Utilization Rate: ",
@@ -106,18 +98,6 @@ contract InteractWithAggregator is Script {
                         averageStableBorrowRate,
                         10 ** 27
                     ),
-                    // "_____________",
-                    // "COMPOUND: ",
-                    // "Total Supply: ",
-                    // Formatter.formatLargeNumber(totalSupply),
-                    // ", Total Borrow: ",
-                    // Formatter.formatLargeNumber(totalBorrow),
-                    // ", Utilization: ",
-                    // Formatter.formatPercentage(utilization, 10 ** 18),
-                    // ", Supply Rate: ",
-                    // Formatter.formatPercentage(supplyRate, 10 ** 18),
-                    // ", Borrow Rate: ",
-                    // Formatter.formatPercentage(borrowRate, 10 ** 18),
                     "Based on these data, please provide an estimate of the future supply rate over the next 3 days and generate prompt only with result which option is better."
                 )
             );

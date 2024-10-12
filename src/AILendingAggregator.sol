@@ -16,8 +16,8 @@ contract AILendingAggregator {
     IPool public aave;
     IComet public comet;
 
-    event LiquiditySupplied(string protocol, address asset, uint256 amount);
-    event Withdraw(string protocol, address asset, uint256 amount);
+    event LiquiditySupplied(address asset, uint256 amount);
+    event Withdraw(address asset, uint256 amount);
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner can call this function");
@@ -27,15 +27,14 @@ contract AILendingAggregator {
     constructor(address _promptContractAddress, address _aave, address _comet) {
         owner = msg.sender;
         promptContract = LendingPrompt(_promptContractAddress);
-        aave = IPool(_aave); // poolDataProvider on sepolia = 0x3e9708d80f7B3e43118013075F7e95CE3AB31F31
-        comet = IComet(_comet); // cWETHv3 = 0x2943ac1216979aD8dB76D9147F64E61adc126e96
+        aave = IPool(_aave); // 0x501B4c19dd9C2e06E94dA7b6D5Ed4ddA013EC741 poolDataProvider on op sepolia
     }
 
     /// @notice Supply liquidity to AAVE platform
     /// @param asset The address of the asset being supplied (e.g., USDC)
     /// @param amount The amount of the asset being supplied
     /// @param onBehalfOf The address that will receive the aTokens
-    function supplyToAave(
+    function supply(
         address asset,
         uint256 amount,
         address onBehalfOf
@@ -47,26 +46,7 @@ contract AILendingAggregator {
         aave.supply(asset, amount, onBehalfOf, 0); // `0` is the referral code
 
         // Emit an event
-        emit LiquiditySupplied("AAVE", asset, amount);
-    }
-
-    /// @notice Supply liquidity to COMPOUND platform
-    /// @param asset The address of the asset being supplied (e.g., USDC)
-    /// @param amount The amount of the asset being supplied
-    function supplyToCompound(
-        address from,
-        address dst,
-        address asset,
-        uint256 amount
-    ) external onlyOwner {
-        // Approve Compound Comet to spend the tokens
-        IERC20(asset).approve(address(comet), amount);
-
-        // Supply to Compound using `supply` function in Comet
-        comet.supplyFrom(from, dst, asset, amount); // check msg.sender vs msg.sender() + corectness of address(comet)
-
-        // Emit an event
-        emit LiquiditySupplied("COMPOUND", asset, amount);
+        emit LiquiditySupplied(asset, amount);
     }
 
     function checkResultAndSetPlatform(
