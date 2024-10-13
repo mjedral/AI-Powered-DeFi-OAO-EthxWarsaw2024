@@ -48,19 +48,4 @@ contract AILendingAggregator {
         // Emit an event
         emit LiquiditySupplied(asset, amount);
     }
-
-    function checkResultAndSetPlatform(
-        uint256 modelId,
-        string calldata prompt
-    ) external onlyOwner {
-        string memory aiResult = promptContract.getAIResult(modelId, prompt);
-        require(bytes(aiResult).length > 0, "Result is not ready yet");
-        AIResult = aiResult;
-    }
-
-    /*
-    
-       HERE WILL BE LOGIC RESPONSIBLE FOR ADDING SUPPLY TO LENDING PLATFORMS AFTER GETTING RESULT FROM AI MODEL
-
-    */
 }

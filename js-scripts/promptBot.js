@@ -9,23 +9,21 @@ const aggregatorAddress = '0xFB4FD631C9e4DED88526aD454e5FFBFADe55c3D7';
 const lendingPromptAddress = '0xe4DC4aFe063491eFB3b5930118f8937bd1c8Ef59';
 const USDC_OP_SEPOLIA = '0x5fd84259d66Cd46123540766Be93DFE6D43130D7';
 
-// Połączenie z siecią
+
 const provider = new ethers.AlchemyProvider("optimism-sepolia", process.env.API_KEY);
-console.log('key', process.env.PRIVATE_KEY_JS)
 const wallet = new ethers.Wallet(process.env.PRIVATE_KEY_JS, provider);
 
-// Inicjalizacja kontraktów
 const aaveDataProvider = new ethers.Contract(AAVE_DATA_PROVIDER, abiAaveDataProvider, wallet);
 const lendingPrompt = new ethers.Contract(lendingPromptAddress, abiLendingPrompt, wallet);
 // const aggregator = new ethers.Contract(aggregatorAddress, abiAILendingAggregator, wallet);
 
 // Formatowanie dużych liczb
 function formatLargeNumber(number) {
-    return ethers.formatUnits(number, 18); // Przyjęcie 18 miejsc po przecinku
+    return ethers.formatUnits(number, 18);
 }
 
 function formatPercentage(number, scale) {
-    const percentage = (Number(number) / Number(scale)) * 100; // Konwersja BigInt na number
+    const percentage = (Number(number) / Number(scale)) * 100;
     return `${percentage.toFixed(2)}%`;
 }
 
@@ -56,93 +54,48 @@ async function getPrompt() {
     return prompt;
 }
 
-async function sendTransaction(prompt) {
-    const modelId = 11;
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
-
-    const _value = ethers.parseEther("0.0100550149");
-
-
-    const data = lendingPrompt.interface.encodeFunctionData("calculateAIResult", [modelId, prompt]);
-
-
-    const gasLimit = await provider.estimateGas({
-        to: lendingPromptAddress,
-        value: _value,
-        data: data
+async function listenForRequestId() {
+    return new Promise((resolve, _) => {
+        lendingPrompt.once("promptRequest", (requestId) => {
+            resolve(Number(requestId));
+        });
     });
-
-    // const maxPriorityFeePerGas = ethers.parseUnits("3", "gwei");
-    // const maxFeePerGas = ethers.parseUnits("3", "gwei");
-
-    const nonce = await provider.getTransactionCount(wallet.address, "latest") + 1;
-
-
-    const tx = {
-        to: lendingPromptAddress,
-        value: _value,
-        data: data,
-        nonce: nonce,
-        gasLimit: gasLimit,
-        maxPriorityFeePerGas: 300000000,
-        maxFeePerGas: 300000000,
-        chainId: 11155420
-    };
-
-    try {
-
-        const signedTx = await wallet.sendTransaction(tx);
-
-        // const txResponse = await provider.broadcastTransaction(signedTx);
-        // console.log("TX RESPONSE", txResponse)
-
-        const receipt = await signedTx.wait();
-        console.log('Transaction was mined in block', receipt.blockNumber);
-    } catch (error) {
-        console.error("Transaction failed", error);
-    }
 }
 
-// Funkcja do interakcji z LendingPrompt (pierwsza część)
-async function firstPart(prompt) {
-    const fee = await lendingPrompt.estimateFee(11);
-    console.log(`Estimated Fee: ${fee.toString()}`);
-
-    const result = lendingPrompt.requests(372);
-
-    const { sender, modelId, input, output } = await result;
+async function fetchRequestResult(requestId) {
+    const result = await lendingPrompt.requests(requestId);
+    const { sender, modelId, output } = result;
 
     console.log("Sender: ", sender);
     console.log("Model ID: ", modelId);
     console.log("Output: ", ethers.toUtf8String(output));
-
-    // await lendingPrompt.setCallbackGasLimit(11, 5000000);
-    // await sendTransaction(prompt);
-    // await lendingPrompt.calculateAIResult(11, prompt, { value: ethers.parseEther("0.0100550149") });
 }
 
-// Funkcja do interakcji z AILendingAggregator (druga część)
-async function secondPart(prompt) {
-    // await aggregator.checkResultAndSetPlatform(11, prompt);
-}
 
-// Główna funkcja - odpowiednik run()
 async function main() {
     const prompt = await getPrompt();
+
     console.log(`Generated Prompt: ${prompt}`);
 
-    // Pierwsza część - interakcja z LendingPrompt
-    await firstPart(prompt);
+    const fee = await lendingPrompt.estimateFee(11);
 
-    // Czekanie (przykładowo 10 minut)
-    // console.log("Waiting for 10 minutes...");
-    // await new Promise(r => setTimeout(r, 600000));
+    console.log(`Estimated Fee: ${fee.toString()}`);
 
-    // // Druga część - interakcja z AILendingAggregator
-    // await secondPart(prompt);
+    const _value = ethers.parseEther("0.0100550149");
+
+    await lendingPrompt.calculateAIResult(11, prompt, { value: _value });
+
+    const requestId = await listenForRequestId(lendingPrompt)
+
+    await delay(10000);
+
+    await fetchRequestResult(requestId);
+
+
 }
 
-// Uruchomienie skryptu
 main().catch((error) => {
     console.error(error);
     process.exit(1);
