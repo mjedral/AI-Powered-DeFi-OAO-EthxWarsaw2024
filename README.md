@@ -6,6 +6,13 @@
 
 **AILendingAggregator.sol**: 0x3d49D97A7575a554C8206a04DC497365dDf2f294
 
+
+## Deployed Contracts (Optimism Sepolia)
+
+**LendingPrompt.sol**: 0xe4DC4aFe063491eFB3b5930118f8937bd1c8Ef59
+
+**AILendingAggregator.sol**: 0x3d49D97A7575a554C8206a04DC497365dDf2f294
+
 --------------
 
 ## Project Overview
