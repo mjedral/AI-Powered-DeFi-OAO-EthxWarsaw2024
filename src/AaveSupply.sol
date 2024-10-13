@@ -8,7 +8,7 @@ import "./interfaces/IComet.sol";
 import "../lib/openzeppelin-contracts/contracts/utils/Strings.sol";
 import "../lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 
-contract AILendingAggregator {
+contract AaveSupply {
     //check slots order
     string public AIResult;
     address public owner;
@@ -47,5 +47,31 @@ contract AILendingAggregator {
 
         // Emit an event
         emit LiquiditySupplied(asset, amount);
+    }
+
+    function withdraw(
+        address asset,
+        uint256 amount,
+        address to
+    ) external onlyOwner {
+        aave.withdraw(asset, amount, to);
+        emit Withdraw(asset, amount);
+    }
+
+    function getUserAccountData(
+        address user
+    )
+        external
+        view
+        returns (
+            uint256 totalCollateralETH,
+            uint256 totalDebtETH,
+            uint256 availableBorrowsETH,
+            uint256 currentLiquidationThreshold,
+            uint256 ltv,
+            uint256 healthFactor
+        )
+    {
+        return aave.getUserAccountData(user);
     }
 }
