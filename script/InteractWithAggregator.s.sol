@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import {Script, console} from "forge-std/Script.sol";
 import {IERC20} from "../lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import "../src/AILendingAggregator.sol";
+import "../src/AaveSupply.sol";
 import "../src/LendingPrompt.sol";
 import "../src/interfaces/IPoolDataProvider.sol";
 import "../src/interfaces/IComet.sol";
@@ -113,12 +113,6 @@ contract InteractWithAggregator is Script {
         lendingPrompt.setCallbackGasLimit(11, 5000000);
 
         lendingPrompt.calculateAIResult{value: 100000000000000000}(11, prompt);
-    }
-
-    function secondPart(string memory prompt) public {
-        AILendingAggregator aggregator = AILendingAggregator(aggregatorAddress);
-
-        aggregator.checkResultAndSetPlatform(11, prompt);
     }
 
     function run() external {

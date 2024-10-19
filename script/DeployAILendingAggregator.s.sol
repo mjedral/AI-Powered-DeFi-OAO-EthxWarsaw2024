@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
-import "../src/AILendingAggregator.sol";
+import "../src/AaveSupply.sol";
 import "../src/LendingPrompt.sol";
 
 contract DeployAILendingAggregator is Script {
@@ -16,13 +16,9 @@ contract DeployAILendingAggregator is Script {
         address promptContract = 0xc1A146358A8c011aC8419Aea7ba6d05966CC1774;
 
         // Deploy kontraktu AILendingAggregator
-        AILendingAggregator aggregator = new AILendingAggregator(
-            promptContract,
-            aaveDataProvider,
-            cometAddress
-        );
+        AaveSupply aaveSupply = new AaveSupply(aaveDataProvider);
 
-        console.log("AILendingAggregator deployed at:", address(aggregator));
+        console.log("AaveSupply contract deployed at:", address(aaveSupply));
 
         vm.stopBroadcast();
     }
